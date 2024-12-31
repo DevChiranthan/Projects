@@ -1,1 +1,75 @@
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.util.Random;
+
+public class NumberGuesser {
+    public static void main(String[] args) {
+        // Create JFrame
+        JFrame frame = new JFrame("Number Guesser");
+        frame.setSize(400, 400);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(null);
+
+        // Create components
+        JLabel label = new JLabel("Guess a number between 1-100:");
+        label.setBounds(20, 20, 200, 30);
+
+        JTextField textField = new JTextField();
+        textField.setBounds(220, 20, 100, 30);
+
+        JButton button = new JButton("Guess");
+        button.setBounds(150, 70, 100, 30);
+
+        JTextArea resultArea = new JTextArea();
+        resultArea.setBounds(20, 120, 350, 200);
+        resultArea.setEditable(false);
+
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+        scrollPane.setBounds(20, 120, 350, 200);
+
+        JLabel triesLabel = new JLabel();
+        triesLabel.setBounds(20, 330, 350, 30);
+
+        // Add components to frame
+        frame.add(label);
+        frame.add(textField);
+        frame.add(button);
+        frame.add(scrollPane);
+        frame.add(triesLabel);
+
+        // Generate random number and initialize variables
+        Random rand = new Random();
+        int randNum = rand.nextInt(100) + 1; // Random number between 1 and 100
+        final int[] tries = {0}; 
+
+        // Add ActionListener to button
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    // Get user's guess
+                    int guess = Integer.parseInt(textField.getText());
+                    tries[0]++;
+
+                    // Check the guess
+                    if (guess == randNum) {
+                        resultArea.append("Hurray! You guessed it right, the number is " + randNum + "\n");
+                        triesLabel.setText("It took you " + tries[0] + " guesses!");
+                        button.setEnabled(false); // Disable button after correct guess
+                    } else if (guess > randNum) {
+                        resultArea.append(guess+" is too high\n");
+                    } else {
+                        resultArea.append(guess+" is too low\n");
+                    }
+                } catch (NumberFormatException ex) {
+                    resultArea.append("Please enter a valid number!\n");
+                }
+            }
+        });
+
+        // Set frame visibility
+        frame.setVisible(true);
+    }
+}
 

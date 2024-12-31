@@ -1,1 +1,201 @@
 
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.*;
+
+public class AdvancedTimetableMaker extends JFrame {
+    private ArrayList<ClassRoom> classrooms = new ArrayList<>();
+    private JTextField classNameField, subjectNameField, frequencyField;
+    private JTable classTable, subjectTable;
+    private DefaultTableModel classTableModel, subjectTableModel;
+
+    public AdvancedTimetableMaker() {
+        setTitle("Advanced Timetable Maker");
+        setSize(1200, 800);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        JPanel classPanel = new JPanel(new BorderLayout());
+        JPanel classInputPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+
+        classNameField = new JTextField();
+        classInputPanel.add(new JLabel("Class Name:"));
+        classInputPanel.add(classNameField);
+
+        JButton addClassButton = new JButton("Add Class");
+        addClassButton.addActionListener(e -> addClassroom());
+        classInputPanel.add(addClassButton);
+
+        classTableModel = new DefaultTableModel(new Object[]{"Class Name"}, 0);
+        classTable = new JTable(classTableModel);
+        classPanel.add(classInputPanel, BorderLayout.NORTH);
+        classPanel.add(new JScrollPane(classTable), BorderLayout.CENTER);
+
+        JPanel subjectPanel = new JPanel(new BorderLayout());
+        JPanel subjectInputPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+
+        subjectNameField = new JTextField();
+        subjectInputPanel.add(new JLabel("Subject Name:"));
+        subjectInputPanel.add(subjectNameField);
+
+        frequencyField = new JTextField();
+        subjectInputPanel.add(new JLabel("Frequency per week:"));
+        subjectInputPanel.add(frequencyField);
+
+        JButton addSubjectButton = new JButton("Add Subject");
+        addSubjectButton.addActionListener(e -> addSubject());
+        subjectInputPanel.add(addSubjectButton);
+
+        subjectTableModel = new DefaultTableModel(new Object[]{"Subject Name", "Frequency"}, 0);
+        subjectTable = new JTable(subjectTableModel);
+        subjectPanel.add(subjectInputPanel, BorderLayout.NORTH);
+        subjectPanel.add(new JScrollPane(subjectTable), BorderLayout.CENTER);
+
+        JPanel timetablePanel = new JPanel(new BorderLayout());
+        JButton generateTimetableButton = new JButton("Generate Timetable");
+        generateTimetableButton.addActionListener(e -> generateTimetable());
+        timetablePanel.add(generateTimetableButton, BorderLayout.NORTH);
+
+        tabbedPane.add("Classes", classPanel);
+        tabbedPane.add("Subjects", subjectPanel);
+        tabbedPane.add("Timetable", timetablePanel);
+
+        centerPanel.add(tabbedPane, BorderLayout.CENTER);
+        add(centerPanel, BorderLayout.CENTER);
+
+        addEnterKeyNavigation();
+
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setVisible(true);
+    }
+
+    private void addEnterKeyNavigation() {
+        KeyAdapter enterKeyListener = new KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    ((Component) e.getSource()).transferFocus();
+                }
+            }
+        };
+        classNameField.addKeyListener(enterKeyListener);
+        subjectNameField.addKeyListener(enterKeyListener);
+        frequencyField.addKeyListener(enterKeyListener);
+    }
+
+    private void addClassroom() {
+        String className = classNameField.getText();
+        if (!className.isEmpty()) {
+            classrooms.add(new ClassRoom(className));
+            classTableModel.addRow(new Object[]{className});
+            classNameField.setText("");
+            JOptionPane.showMessageDialog(this, "Class added successfully!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Please enter a class name.");
+        }
+    }
+
+    private void addSubject() {
+        String subjectName = subjectNameField.getText();
+        String frequencyText = frequencyField.getText();
+        try {
+            int frequency = Integer.parseInt(frequencyText);
+            if (!subjectName.isEmpty() && frequency > 0) {
+                subjectTableModel.addRow(new Object[]{subjectName, frequency});
+                subjectNameField.setText("");
+                frequencyField.setText("");
+                JOptionPane.showMessageDialog(this, "Subject added successfully!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Please enter valid subject details.");
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Frequency should be a number.");
+        }
+    }
+
+    private void generateTimetable() {
+        String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+        String[] times = {"8:30 - 9:30", "9:30 - 10:30", "10:30 - 11:30", "11:30 - 12:30", 
+                          "Lunch Break", "1:30 - 2:30", "2:30 - 3:30"};
+        
+        for (ClassRoom classRoom : classrooms) {
+            DefaultTableModel timetableModel = new DefaultTableModel();
+            timetableModel.addColumn("Days / Times");
+            for (String time : times) {
+                timetableModel.addColumn(time);
+            }
+
+            Random random = new Random();
+            HashMap<String, Integer> weeklySubjectAllocations = new HashMap<>();
+            for (int i = 0; i < subjectTableModel.getRowCount(); i++) {
+                String subject = (String) subjectTableModel.getValueAt(i, 0);
+                int frequency = (int) subjectTableModel.getValueAt(i, 1);
+                weeklySubjectAllocations.put(subject, frequency);
+            }
+
+            for (String day : days) {
+                HashMap<String, Integer> dailySubjectAllocations = new HashMap<>(weeklySubjectAllocations);
+                Object[] row = new Object[times.length + 1];
+                row[0] = day;
+                
+                for (int j = 1; j <= times.length; j++) {
+                    if (times[j - 1].equals("Lunch Break")) {
+                        row[j] = "Lunch Break";
+                    } else {
+                        java.util.List<String> availableSubjects = new ArrayList<>();
+                        for (Map.Entry<String, Integer> entry : dailySubjectAllocations.entrySet()) {
+                            if (entry.getValue() > 0) {
+                                availableSubjects.add(entry.getKey());
+                            }
+                        }
+
+                        if (availableSubjects.isEmpty()) break;
+  String subject;
+                        int retryCount = 0;
+                        do {
+                            subject = availableSubjects.get(random.nextInt(availableSubjects.size()));
+                            retryCount++;
+                        } while (j > 1 && subject.equals(row[j - 1]) && retryCount < availableSubjects.size());
+
+                        row[j] = subject;
+                        dailySubjectAllocations.put(subject, dailySubjectAllocations.get(subject) - 1);
+                    }
+                }
+                timetableModel.addRow(row);
+            }
+
+            JTable timetableTable = new JTable(timetableModel) {
+                @Override
+                public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                    Component c = super.prepareRenderer(renderer, row, column);
+                    c.setFont(getFont().deriveFont(column == 0 || row == 0 ? Font.BOLD : Font.PLAIN));
+                    return c;
+                }
+            };
+            JScrollPane scrollPane = new JScrollPane(timetableTable);
+            scrollPane.setPreferredSize(new Dimension(1000, 500));
+
+            JOptionPane.showMessageDialog(this, scrollPane, "Timetable for " + classRoom.getName(), JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private static class ClassRoom {
+        private String name;
+        public ClassRoom(String name) { this.name = name; }
+        public String getName() { return name; }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new AdvancedTimetableMaker().setVisible(true));
+    }
+}
